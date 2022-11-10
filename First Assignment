@@ -1,0 +1,107 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <errno.h>
+#include <signal.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#include <string.h>
+
+int main(void){
+
+    void sigint_handler(int sig);
+    void sigtstp_handler(int sig);
+    void sigquit_handler(int sig);
+    int input;
+    int pipefds[2];
+    char s[100];
+    char buffer[50];
+
+    // Signal Handler Command
+    if (signal(SIGINT, sigint_handler) == SIG_ERR){
+        perror("signal");
+        exit(1);
+    }
+    else if (signal(SIGTSTP, sigtstp_handler) == SIG_ERR){
+        perror("signal");
+        exit(1);
+    }
+    else if (signal(SIGQUIT, sigquit_handler) == SIG_ERR){
+        perror("signal");
+        exit(1);
+    }
+    
+    // Pipe Check Command
+    if(pipe(pipefds) == -1){
+        perror("Pipe Error!!!");
+        exit(EXIT_FAILURE);
+    }
+    
+     // Parent Input Message and Check Command
+    printf("\n Enter your message here : ");
+
+    if (fgets(s, 100, stdin) == NULL){
+        perror("The input error!!!");
+    }
+    else {
+        printf("\n Your message is: %s\n\n", s);
+    }
+
+
+    // How do you want it loop
+    printf("How many do you want this message to be display? : ");
+    scanf("%d", &input);
+
+    // How Many Looping Input Check
+    if (input < 1){
+        perror("Looping error!");
+    }
+    else {
+        printf("You have entered: %d\n\n", input);
+    }
+
+    // Pipe Write and read
+    printf("\n Waiting for message to be diplay...\n");
+    write(pipefds[1], &s, sizeof(s));
+    printf("Finish!\n\n");
+
+    printf("\n Receiving the message...\n");
+    read(pipefds[0], &buffer, sizeof(buffer));
+    printf("Finish!\n\n");
+
+    // Fork Looping Command
+    for(int x = 0; x <("%d", input) ; x++) {
+        pid_t pid = fork();
+
+            if(pid == 0) {
+                printf("The message that has been receive : %s \n", buffer);
+                exit(0);
+   }
+            else {
+                printf("Waiting for receiving process is done...\n");
+                wait(NULL);
+                close(pipefds[1]);
+                close(pipefds[0]);
+                printf("Successfully received!\n\n");
+            }
+    }
+}
+
+// Ctrl+C Signal Handler Message
+void sigint_handler(int sig)
+{
+        printf("ERROR!\n");
+}
+
+// Ctrl+Z Signal Handler Message
+void sigtstp_handler(int sig)
+{
+        printf("ERROR!\n");
+}
+
+// Ctrl+Backspace Signal Handler Message
+void sigquit_handler(int sig)
+{
+        printf("ERROR!\n");
+}
+
